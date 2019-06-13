@@ -105,7 +105,7 @@ jaeger-query   LoadBalancer   10.0.0.0   xxx.xxx.xxx.xxx   80:31742/TCP   111s
 
 ## 2. アプリケーション開発
 ### 2-1. マイクロサービスなアプリケーションの開発
-【あとで書き換え】
+【あとで書き換え】  
 以下コマンドにてMVCアプリケーションを作成し、動作確認する。
 ```
 $ dotnet new mvc -o {AppName}
@@ -114,6 +114,7 @@ $ dotnet run
 ```
 
 ### 2-2. アプリケーションのコンテナ化
+【あとで書き換え】  
 前項で作成したアプリケーションをコンテナ化します。  
 アプリケーションのソースディレクトリにてDockerfileを作成します。
 ```
@@ -146,76 +147,67 @@ $ docker push {ACR Login server}/{app name}:v1
 ```
 
 ### 2-3. kubernetes Deploymentの作成
-【あとで書き換え】  
-Kubernetesで動作させるためにyamlを作成します。  
-Cloud Shellでdeployment.yamlを以下のように作成します。
+アプリケーションをデプロイするnamespaceを準備します。  
+また、追加したnamespaceで全てのPodにIstioプロキシをサイドカーとして挿入するようにします。
 ```
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: aks-deployment
-  labels:
-    app: aksapp
-spec:
-  replicas: 5
-  selector:
-    matchLabels:
-      app: aksapp
-  template:
-    metadata:
-      labels:
-        app: aksapp
-    spec:
-      containers:
-      - name: aksapp
-        image: {ACR Login server}/{app name}:v1
-        ports:
-        - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: aksapp
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 80
-  selector:
-    app: aksapp
+xxxx@Azure:~$ kubectl create namespace aksapp
+xxxx@Azure:~$ kubectl label namespace aksapp istio-injection=enabled
 ```
 
-作成されたdeployment.yamlを使ってKubernetesへコンテナアプリケーションをデプロイします。
+Kubernetesで動作させるためにyamlを作成します。  
+Cloud Shellでstep1-create-app.yamlのimage部分を作成したACRへ編集します。
 ```
-xxxx@Azure:~$ kubectl apply -f <(/usr/local/bin/istioctl kube-inject -f ./deployment.yaml)
+    spec:
+      containers:
+      - name: aks-app
+        image: {ACRname}.azurecr.io/aksapp:v1
+        imagePullPolicy: Always
+```
+
+作成したstep1-create-app.yamlを使ってKubernetesへコンテナアプリケーションをデプロイします。
+```
+xxxx@Azure:~$ kubectl apply -f step1-create-app.yaml -n aksapp
+```
+
+VirtualServiceとGatewayを作成するため、step1-create-gateway.yamlをデプロイします。
+```
+xxxx@Azure:~$ kubectl apply -f step1-create-gateway.yaml -n aksapp
 ```
 
 確認するには以下のコマンドを入力します。
 ```
-xxxx@Azure:~$ kubectl get deploy,po,service
-NAME                                   DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-deployment.extensions/aks-deployment   5         5         5            5           3m36s
+xxxx@Azure:~$ kubectl get deploy,po,service,gateway,virtualservice -n aksapp
+NAME                                DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+deployment.extensions/aks-app-1-0   3         3         3            3           3h30m
+deployment.extensions/aks-app-2-0   3         3         3            3           3h29m
 
-NAME                                  READY   STATUS    RESTARTS   AGE
-pod/aks-deployment-65949499bc-5nh8b   2/2     Running   0          3m36s
-pod/aks-deployment-65949499bc-5t5fc   2/2     Running   0          3m36s
-pod/aks-deployment-65949499bc-fxjpz   2/2     Running   0          3m36s
-pod/aks-deployment-65949499bc-kktgx   2/2     Running   0          3m36s
-pod/aks-deployment-65949499bc-n8v7w   2/2     Running   0          3m36s
+NAME                               READY   STATUS    RESTARTS   AGE
+pod/aks-app-1-0-7798bbfc69-bxgf6   2/2     Running   0          3h30m
+pod/aks-app-1-0-7798bbfc69-gmd95   2/2     Running   0          3h30m
+pod/aks-app-1-0-7798bbfc69-vk7dx   2/2     Running   0          3h30m
+pod/aks-app-2-0-5b4f9d8c47-8g58m   2/2     Running   0          3h29m
+pod/aks-app-2-0-5b4f9d8c47-c7kkm   2/2     Running   0          3h29m
+pod/aks-app-2-0-5b4f9d8c47-zhhkr   2/2     Running   0          3h29m
 
-NAME                 TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)        AGE
-service/aksapp       LoadBalancer   10.0.xxx.xxx   xx.xxx.xx.xxx   80:31369/TCP   3m36s
-service/kubernetes   ClusterIP      10.0.0.1       <none>          443/TCP        3h7m
+NAME              TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+service/aks-app   ClusterIP   10.0.xxx.xx   <none>        80/TCP    3h30m
+
+NAME                                          AGE
+gateway.networking.istio.io/aks-app-gateway   3h
+
+NAME                                         GATEWAYS            HOSTS   AGE
+virtualservice.networking.istio.io/aks-app   [aks-app-gateway]   [*]     3h
 ```
 
+アプリケーションへアクセスするためのIPアドレスは以下コマンドで調べられます。
+```
+xxxx@Azure:~$ kubectl get service istio-ingressgateway --namespace istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+xxx.xxx.xxx.xxx%
+```
+表示されたIPアドレスでアプリケーションが表示されるか確認します。
 
 ## 2-4. カナリアリリースの実装
-【あとで書き換え】  
 先ほど作ったアプリケーションを変更し、異なるバージョンを作成します。  
-まず初めに先ほどのコンテナアプリを削除します。
-```
-xxxx@Azure:~$ kubectl delete -f deployment.yaml
-```
-
 Views/HomeIndex.cshtmlを編集し、コンテナ化します。
 出来上がったら先ほどと同様にdocker buildしてみて動作するかを検証します。
 ```
@@ -229,9 +221,39 @@ $ docker tag {app name} {ACR Login server}/{app name}:v2
 $ docker push {ACR Login server}/{app name}:v2
 ```
 
-2つのバージョンを表示するためKubernetes用deployments.yamlを作成します。
+Cloud Shellでstep2-update-app.yamlのimage部分を作成したACRへ編集します。
+```
+    spec:
+      containers:
+      - name: aks-app
+        image: {ACRname}.azurecr.io/aksapp:v2
+        imagePullPolicy: Always
 ```
 
+新しいバージョンのアプリケーションをデプロイします。
+```
+xxxx@Azure:~$ kubectl apply -f step2-update-app.yaml -n aksapp
+```
+
+2つのバージョンを表示させるため、VirtualServiceを変更します。
+```
+xxxx@Azure:~$ kubectl apply -f step2-update-gateway.yaml -n aksapp
+```
+
+比率を変更する場合はweightの値を変更します。
+```
+    - destination:
+        host: aks-app.aksapp.svc.cluster.local
+        subset: v1
+        port:
+          number: 80
+      weight: 80
+    - destination:
+        host: aks-app.aksapp.svc.cluster.local
+        subset: v2
+        port:
+          number: 80
+      weight: 20
 ```
 
 
@@ -265,15 +287,38 @@ cat $(Build.SourcesDirectory)/deployment.yaml
 
 # Use the environment variables input below to pass secret variables to this script
 ```
-Publish Artifactを追加し、deployment.yamlを選択します。
-
+Publish Artifactを追加し、deployment.yamlを選択します。  
+Path to publishでdeployment.yamlを選択、Artifact nameではyamlと入力し、Saveします。  
 
 ### 3-4. リリースの作成
+Releasesを開き、New pipelineをクリックします。  
+Deploy to a Kubernetes clusterをApplyします。  
+Stageは×で閉じ、Add an artifactをクリックし、3-3で作成したBuildをSourceに選んでAddします。  
+右上の丸アイコンをクリックし、Continuous deployment triggerをEnabledにします。  
+Build branch filtersをAddしてBuild branchをmasterにします。  
+Stage 1の下にある「1 job, 1task」をクリックし、kubectlを選択します。  
+Kubernets service connectionは+newをクリックし、Azure Subscriptionから対象のAKSクラスタを選択します。 
+Namespaceにはaksappを選択します。  
+画面が戻るのでNamespaceにaksappを入力し、Commandはapplyを選択してUse Configuration filesにチェックを入れてdeployment.yamlを選択する。  
+SaveしてOKする。  
+
+### 3-5. パイプラインの自動化
+Pipelineを開き、Ar
+
 
 ## 4. リソースの削除
-### 4-1. Azure リソースの削除
-Azure Portal[https://portal.azure.com/]より1-1で作成したリソースグループを削除する。  
+### 4-1. Kubernetesリソースの削除
+対象のnamespaceを削除することで使用したアプリをAKSクラスターから削除できます。
+```
+xxxx@Azure:~$ kubectl delete namespace aksapp
+```
 
-### 4-2. Azure DevOpsリソースの削除
+### 4-2. Azure リソースの削除
+Azure Portal[https://portal.azure.com/]より1-1で作成したリソースグループを削除する。  
+```
+xxxx@Azure:~$ az group delete --name {ResourceGroup}
+```
+
+### 4-3. Azure DevOpsリソースの削除
 Azure DevOps[https://dev.azure.com/]より3-2で作成したプロジェクトを削除する。
 
