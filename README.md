@@ -113,8 +113,8 @@ jaeger-query   LoadBalancer   10.0.0.0   xxx.xxx.xxx.xxx   80:31742/TCP   111s
 【あとで書き換え】  
 以下コマンドにてMVCアプリケーションを作成し、動作確認する。
 ```
-$ dotnet new mvc -o {AppName}
-$ cd {AppName}
+$ dotnet new mvc -o aksapp
+$ cd aksapp
 $ dotnet run
 ```
 
@@ -133,22 +133,22 @@ RUN dotnet restore
 COPY . ./
 RUN dotnet publish -c Release -o /app
 
-ENTRYPOINT [ "dotnet", "{app name}".dll" ]
+ENTRYPOINT [ "dotnet", "aksapp".dll" ]
 ```
 
 出来上がったらdocker buildしてみて動作するかを検証します。
 ```
 $ docker build ./ -t xxxxx
-$ docker run -it --name {app name} -p 8080:80 {contaienr name}
+$ docker run -it --name aksapp -p 8080:80 aksapp
 ```
 
 動作確認が完了したらACRへコンテナイメージをプッシュします。  
 まずはAzure PortalでContainer registryAccess keysよりLogin serverとUsername/passwordを確認します。  
 次に、作成したコンテナイメージのタグをACRへプッシュするため変更し、ACRへログインしてプッシュします。
 ```
-$ docker tag {app name} {ACR Login server}/{app name}:v1
-$ docker login {ACR Login server}
-$ docker push {ACR Login server}/{app name}:v1
+$ docker tag aksapp {ACRname}.azurecr.io/aksapp:v1
+$ docker login {ACRname}.azurecr.io
+$ docker push {ACRname}.azurecr.io/aksapp:v1
 ```
 
 ### 2-3. kubernetes Deploymentの作成
@@ -217,13 +217,13 @@ Views/HomeIndex.cshtmlを編集し、コンテナ化します。
 出来上がったら先ほどと同様にdocker buildしてみて動作するかを検証します。
 ```
 $ docker build ./ -t xxxxx
-$ docker run -it --name {app name} -p {port}:{port} {contaienr name}
+$ docker run -it --name aksapp -p 8000:80 aksapp
 ```
 
 動作に問題なければACRへバージョンタグを変更してプッシュします。
 ```
-$ docker tag {app name} {ACR Login server}/{app name}:v2
-$ docker push {ACR Login server}/{app name}:v2
+$ docker tag aksapp {ACR Login server}/aksapp:v2
+$ docker push {ACR Login server}/aksapp:v2
 ```
 
 Cloud Shellでstep2-update-app.yamlのimage部分を作成したACRへ編集します。
@@ -283,7 +283,7 @@ git push -u origin --all
 Pipelinesを開き、New pipelineをクリックします。  
 Use the classic editorをクリックし、Azure Repos Gitにて先ほどプッシュしたリポジトリが選択されていることを確認し、Continueをクリックします。  
 Docker containerをApplyします。
-Build an imageとPush an imageにて6.1で作成したレジストリをそれぞれAzure subscriptionとAzure container Registryで選択します。  
+Build an imageとPush an imageにて[1-2](###-1-2.-Azure-Container-Registry(ACR)の構築)で作成したレジストリをそれぞれAzure subscriptionとAzure container Registryで選択します。  
 +をクリックし、Bash Scriptを追加。  
 TypeをInlineにしてScriptを以下のようにします。
 ```
@@ -303,7 +303,7 @@ Path to publishでdeployment.yamlを選択、Artifact nameではyamlと入力し
 ### 3-4. リリースの作成
 Releasesを開き、New pipelineをクリックします。  
 Deploy to a Kubernetes clusterをApplyします。  
-Stageは×で閉じ、Add an artifactをクリックし、3-3で作成したBuildをSourceに選んでAddします。  
+Stageは×で閉じ、Add an artifactをクリックし、[3-3](###-3-3.-ビルドの作成)で作成したBuildをSourceに選んでAddします。  
 右上の丸雷アイコンをクリックし、Continuous deployment triggerをEnabledにします。  
 Build branch filtersをAddしてBuild branchをmasterにします。  
 Stage 1の下にある「1 job, 1task」をクリックし、kubectlを選択します。  
