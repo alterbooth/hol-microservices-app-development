@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: aks-app
-        image: tsukatohaksdemo.azurecr.io/aksdemo:v2
+        image: {ACRname}.azurecr.io/aksapp:v2
         imagePullPolicy: Always
         ports:
         - containerPort: 80

@@ -134,7 +134,7 @@ ENTRYPOINT [ "dotnet", "{app name}".dll" ]
 出来上がったらdocker buildしてみて動作するかを検証します。
 ```
 $ docker build ./ -t xxxxx
-$ docker run -it --name {app name} -p {port}:{port} {contaienr name}
+$ docker run -it --name {app name} -p 8080:80 {contaienr name}
 ```
 
 動作確認が完了したらACRへコンテナイメージをプッシュします。  
@@ -294,7 +294,7 @@ Path to publishでdeployment.yamlを選択、Artifact nameではyamlと入力し
 Releasesを開き、New pipelineをクリックします。  
 Deploy to a Kubernetes clusterをApplyします。  
 Stageは×で閉じ、Add an artifactをクリックし、3-3で作成したBuildをSourceに選んでAddします。  
-右上の丸アイコンをクリックし、Continuous deployment triggerをEnabledにします。  
+右上の丸雷アイコンをクリックし、Continuous deployment triggerをEnabledにします。  
 Build branch filtersをAddしてBuild branchをmasterにします。  
 Stage 1の下にある「1 job, 1task」をクリックし、kubectlを選択します。  
 Kubernets service connectionは+newをクリックし、Azure Subscriptionから対象のAKSクラスタを選択します。 
@@ -302,7 +302,7 @@ Namespaceにはaksappを選択します。
 画面が戻るのでNamespaceにaksappを入力し、Commandはapplyを選択してUse Configuration filesにチェックを入れてdeployment.yamlを選択する。  
 SaveしてOKする。  
 
-### 3-5. パイプラインの自動化
+### 3-5. パイプラインの実行
 Pipelineを開き、Ar
 
 
