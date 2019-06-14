@@ -12,12 +12,15 @@
 * Istio : 1.1.7
 * Jeager : 1.8
 
+## 本ドキュメントの構成
+![Architecture](/screenshots/architecture.png "Architecture")
+
 ## 文中のyamlについて
 本リポジトリ内のyamlディレクトリに同一ファイル名称で格納していますのでご参照ください。    
 
 ## 1. 環境構築
 ### 1-1. Azure Kubernetes Service(AKS)の構築
-Azure Portal[https://portal.azure.com/]へログインします。  
+[Azure Portal](https://portal.azure.com/)へログインします。  
 まず始めにAzure PortalよりCloud Shellを起動します。  
 リソースグループを作成し、作成したリソースグループへAKSを構築します。  
 ```
@@ -262,14 +265,15 @@ xxxx@Azure:~$ kubectl apply -f step2-update-gateway.yaml -n aksapp
 ## 3. パイプラインの作成
 前項までに作成したアプリケーションのCI/CDパイプライン実装を行います。  
 ### 3-1. プロジェクトの作成
-Azure DevOps[https://dev.azure.com/]へサインインします。  
+[Azure DevOps](https://dev.azure.com/)へサインインします。  
 
-プロジェクト名を入力し、Create projectをクリックします。  
+Project nameを入力し、Create projectをクリックします。  
 
 ### 3-2. リポジトリの作成
 Reposを開き、リポジトリのURLを取得して項5で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
 また、Kubernetesへデプロイするためのyamlも用意します。  
-deployment.yamlという名称でファイルを作り、プッシュします。
+deployment.yamlという名称でファイルを作り、プッシュします。  
+サンプルのdeployment.yamlの{ACRname}、{old_version}は置き換えてください。
 ```
 git remote add origin https://xxxxx@dev.azure.com/xxxxx/xxxx/_git/xxxx
 git push -u origin --all
@@ -294,6 +298,8 @@ cat $(Build.SourcesDirectory)/deployment.yaml
 Publish Artifactを追加し、deployment.yamlを選択します。  
 Path to publishでdeployment.yamlを選択、Artifact nameではyamlと入力し、Saveします。  
 
+![Azure DevOps Builds](/screenshots/builds_001.png "Azure DevOps Builds")
+
 ### 3-4. リリースの作成
 Releasesを開き、New pipelineをクリックします。  
 Deploy to a Kubernetes clusterをApplyします。  
@@ -305,10 +311,14 @@ Kubernets service connectionは+newをクリックし、Azure Subscriptionから
 Namespaceにはaksappを選択します。  
 画面が戻るのでNamespaceにaksappを入力し、Commandはapplyを選択してUse Configuration filesにチェックを入れてdeployment.yamlを選択する。  
 SaveしてOKする。  
+![Azure DevOps Releases](/screenshots/releases_001.png "Azure DevOps Releases")  
+![Azure DevOps Releases](/screenshots/releases_002.png "Azure DevOps Releases")
+
 
 ### 3-5. パイプラインの実行
 Buildを開き、Queueをクリックします。  
 今後のパイプラインの動作はmasterブランチが更新された際に自動実行されます。
+![Azure DevOps Pipelines](/screenshots/pipelines_001.png "Azure DevOps Pipelines")
 
 
 ## 4. リソースの削除
