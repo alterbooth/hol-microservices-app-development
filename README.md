@@ -11,7 +11,9 @@
 * Kubernetes(AKS) : 1.12.8
 * Istio : 1.1.7
 * Jeager : 1.8
-  
+
+## 文中のyamlについて
+本リポジトリ内のyamlディレクトリに同一ファイル名称で格納していますのでご参照ください。    
 
 ## 1. 環境構築
 ### 1-1. Azure Kubernetes Service(AKS)の構築
@@ -265,7 +267,9 @@ Azure DevOps[https://dev.azure.com/]へサインインします。
 プロジェクト名を入力し、Create projectをクリックします。  
 
 ### 3-2. リポジトリの作成
-Reposを開き、リポジトリのURLを取得して項5で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録してプッシュします。
+Reposを開き、リポジトリのURLを取得して項5で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
+また、Kubernetesへデプロイするためのyamlも用意します。  
+deployment.yamlという名称でファイルを作り、プッシュします。
 ```
 git remote add origin https://xxxxx@dev.azure.com/xxxxx/xxxx/_git/xxxx
 git push -u origin --all
@@ -303,7 +307,8 @@ Namespaceにはaksappを選択します。
 SaveしてOKする。  
 
 ### 3-5. パイプラインの実行
-Pipelineを開き、Ar
+Buildを開き、Queueをクリックします。  
+今後のパイプラインの動作はmasterブランチが更新された際に自動実行されます。
 
 
 ## 4. リソースの削除
@@ -314,11 +319,11 @@ xxxx@Azure:~$ kubectl delete namespace aksapp
 ```
 
 ### 4-2. Azure リソースの削除
-Azure Portal[https://portal.azure.com/]より1-1で作成したリソースグループを削除する。  
+[Azure Portal](https://portal.azure.com/)より1-1で作成したリソースグループを削除する。  
 ```
 xxxx@Azure:~$ az group delete --name {ResourceGroup}
 ```
 
 ### 4-3. Azure DevOpsリソースの削除
-Azure DevOps[https://dev.azure.com/]より3-2で作成したプロジェクトを削除する。
+[Azure DevOps](https://dev.azure.com/)より3-2で作成したプロジェクトを削除する。
 
