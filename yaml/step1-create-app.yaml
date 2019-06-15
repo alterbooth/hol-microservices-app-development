@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aks-app-1-0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aks-app
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: aks-app
+        version: v1
+    spec:
+      containers:
+      - name: aks-app
+        image: {ACRname}.azurecr.io/aksapp:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aks-app
+  labels: 
+    app: aks-app
+spec:
+  ports:
+  - port: 80
+    name: http
+  selector:
+    app: aks-app
+  type: ClusterIP
