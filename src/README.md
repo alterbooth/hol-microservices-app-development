@@ -10,7 +10,7 @@ $ node index.js
 ```sh
 $ cd web
 $ npm install
-$ API_ENDPOINT=http://localhost:3001/api/v1/message npm start
+$ API_ENDPOINT=http://localhost:3001/api/message npm start
 ```
 
 ブラウザを起動し [http://localhost:3000](http://localhost:3000) にアクセスする。
