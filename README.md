@@ -119,36 +119,50 @@ $ dotnet run
 ```
 
 ### 2-2. アプリケーションのコンテナ化
-【あとで書き換え】  
 前項で作成したアプリケーションをコンテナ化します。  
-アプリケーションのソースディレクトリにてDockerfileを作成します。
+web,apiそれぞれののソースディレクトリにてDockerfileを作成します。
+[web]
 ```
-FROM mcr.microsoft.com/dotnet/core/sdk:2.2
-
-WORKDIR /app
-
-COPY *.csproj ./
-RUN dotnet restore
-
-COPY . ./
-RUN dotnet publish -c Release -o /app
-
-ENTRYPOINT [ "dotnet", "aksapp".dll" ]
+FROM node:10.16.0-alpine
+ADD . /usr/src/web
+WORKDIR /usr/src/web
+RUN npm install
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+[api]
+```
+FROM node:10.16.0-alpine
+ADD . /usr/src/api
+WORKDIR /usr/src/api
+RUN npm install
+EXPOSE 3001
+CMD ["node", "index.js"]
 ```
 
 出来上がったらdocker buildしてみて動作するかを検証します。
+[web]
 ```
-$ docker build ./ -t xxxxx
-$ docker run -it --name aksapp -p 8080:80 aksapp
+$ cd src/web
+$ docker build ./ -t web
+$ docker run -it --name web -p 3000:3000 web
+```
+[api]
+```
+$ cd src/api
+$ docker build ./ -t api
+$ docker run -it --name api -p 3001:3001 api
 ```
 
 動作確認が完了したらACRへコンテナイメージをプッシュします。  
 まずはAzure PortalでContainer registryAccess keysよりLogin serverとUsername/passwordを確認します。  
 次に、作成したコンテナイメージのタグをACRへプッシュするため変更し、ACRへログインしてプッシュします。
 ```
-$ docker tag aksapp {ACRname}.azurecr.io/aksapp:v1
+$ docker tag web {ACRname}.azurecr.io/web:v1
+$ docker tag api {ACRname}.azurecr.io/api:v1
 $ docker login {ACRname}.azurecr.io
-$ docker push {ACRname}.azurecr.io/aksapp:v1
+$ docker push {ACRname}.azurecr.io/web:v1
+$ docker push {ACRname}.azurecr.io/api:v1
 ```
 
 ### 2-3. kubernetes Deploymentの作成
@@ -164,8 +178,15 @@ Cloud Shellでstep1-create-app.yamlのimage部分を作成したACRへ編集し�
 ```
     spec:
       containers:
-      - name: aks-app
-        image: {ACRname}.azurecr.io/aksapp:v1
+      - name: aks-app-web
+        image: {ACRname}.azurecr.io/web:v1
+        imagePullPolicy: Always
+```
+```
+    spec:
+      containers:
+      - name: aks-app-api
+        image: {ACRname}.azurecr.io/api:v1
         imagePullPolicy: Always
 ```
 
@@ -183,47 +204,49 @@ xxxx@Azure:~$ kubectl apply -f step1-create-gateway.yaml -n aksapp
 ```
 xxxx@Azure:~$ kubectl get deploy,po,service,gateway,virtualservice -n aksapp
 NAME                                DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-deployment.extensions/aks-app-1-0   3         3         3            3           3h30m
-deployment.extensions/aks-app-2-0   3         3         3            3           3h29m
+deployment.extensions/aks-app-api   3         3         3            3           6m
+deployment.extensions/aks-app-web   3         3         3            3           6m1s
 
 NAME                               READY   STATUS    RESTARTS   AGE
-pod/aks-app-1-0-7798bbfc69-bxgf6   2/2     Running   0          3h30m
-pod/aks-app-1-0-7798bbfc69-gmd95   2/2     Running   0          3h30m
-pod/aks-app-1-0-7798bbfc69-vk7dx   2/2     Running   0          3h30m
-pod/aks-app-2-0-5b4f9d8c47-8g58m   2/2     Running   0          3h29m
-pod/aks-app-2-0-5b4f9d8c47-c7kkm   2/2     Running   0          3h29m
-pod/aks-app-2-0-5b4f9d8c47-zhhkr   2/2     Running   0          3h29m
+pod/aks-app-api-664d457bc8-c8r72   2/2     Running   0          6m
+pod/aks-app-api-664d457bc8-thjvr   2/2     Running   0          6m
+pod/aks-app-api-664d457bc8-xtr67   2/2     Running   0          6m
+pod/aks-app-web-6758c49bbf-7k5tl   2/2     Running   0          6m1s
+pod/aks-app-web-6758c49bbf-f2zph   2/2     Running   0          6m1s
+pod/aks-app-web-6758c49bbf-lzzb4   2/2     Running   0          6m1s
 
-NAME              TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
-service/aks-app   ClusterIP   10.0.xxx.xx   <none>        80/TCP    3h30m
+NAME                  TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE
+service/aks-app-api   ClusterIP   10.0.xx.xx    <none>        3001/TCP   6m
+service/aks-app-web   ClusterIP   10.0.xxx.xx   <none>        80/TCP     6m1s
 
 NAME                                          AGE
-gateway.networking.istio.io/aks-app-gateway   3h
+gateway.networking.istio.io/aks-app-gateway   4m
 
-NAME                                         GATEWAYS            HOSTS   AGE
-virtualservice.networking.istio.io/aks-app   [aks-app-gateway]   [*]     3h
+NAME                                             GATEWAYS            HOSTS   AGE
+virtualservice.networking.istio.io/aks-app-web   [aks-app-gateway]   [*]     4m
 ```
 
 アプリケーションへアクセスするためのIPアドレスは以下コマンドで調べられます。
 ```
 xxxx@Azure:~$ kubectl get service istio-ingressgateway --namespace istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-xxx.xxx.xxx.xxx%
+xxx.xxx.xxx.xxx
 ```
 表示されたIPアドレスでアプリケーションが表示されるか確認します。
 
 ## 2-4. カナリアリリースの実装
 先ほど作ったアプリケーションを変更し、異なるバージョンを作成します。  
-Views/HomeIndex.cshtmlを編集し、コンテナ化します。
+src/api/index.jsを編集し、コンテナ化します。
 出来上がったら先ほどと同様にdocker buildしてみて動作するかを検証します。
 ```
-$ docker build ./ -t xxxxx
-$ docker run -it --name aksapp -p 8000:80 aksapp
+$ cd src/api/index.js
+$ docker build ./ -t api
+$ docker run -it --name api -p 3001:3001 api
 ```
 
 動作に問題なければACRへバージョンタグを変更してプッシュします。
 ```
-$ docker tag aksapp {ACR Login server}/aksapp:v2
-$ docker push {ACR Login server}/aksapp:v2
+$ docker tag api {ACR Login server}/api:v2
+$ docker push {ACR Login server}/api:v2
 ```
 
 Cloud Shellでstep2-update-app.yamlのimage部分を作成したACRへ編集します。
@@ -283,7 +306,7 @@ git push -u origin --all
 Pipelinesを開き、New pipelineをクリックします。  
 Use the classic editorをクリックし、Azure Repos Gitにて先ほどプッシュしたリポジトリが選択されていることを確認し、Continueをクリックします。  
 Docker containerをApplyします。
-Build an imageとPush an imageにて[1-2](###-1-2.-Azure-Container-Registry(ACR)の構築)で作成したレジストリをそれぞれAzure subscriptionとAzure container Registryで選択します。  
+Build an imageとPush an imageにて[1-2](#1-2-azure-container-registryacrの構築)で作成したレジストリをそれぞれAzure subscriptionとAzure container Registryで選択します。  
 +をクリックし、Bash Scriptを追加。  
 TypeをInlineにしてScriptを以下のようにします。
 ```
@@ -303,7 +326,7 @@ Path to publishでdeployment.yamlを選択、Artifact nameではyamlと入力し
 ### 3-4. リリースの作成
 Releasesを開き、New pipelineをクリックします。  
 Deploy to a Kubernetes clusterをApplyします。  
-Stageは×で閉じ、Add an artifactをクリックし、[3-3](###-3-3.-ビルドの作成)で作成したBuildをSourceに選んでAddします。  
+Stageは×で閉じ、Add an artifactをクリックし、[3-3](#3-3-ビルドの作成)で作成したBuildをSourceに選んでAddします。  
 右上の丸雷アイコンをクリックし、Continuous deployment triggerをEnabledにします。  
 Build branch filtersをAddしてBuild branchをmasterにします。  
 Stage 1の下にある「1 job, 1task」をクリックし、kubectlを選択します。  
