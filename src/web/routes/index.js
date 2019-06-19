@@ -8,9 +8,12 @@ router.get('/', function (req, res, next) {
         method: 'GET',
         json: true
     }, function (error, response, body) {
+        const resText = (process.env.DEBUG == 1) ? JSON.stringify(response) : '';
+
         res.render('index', {
             title: 'Microservices App Development Hands-on Lab',
-            message: body.message
+            message: body.message,
+            response: resText
         });
     });
 });
