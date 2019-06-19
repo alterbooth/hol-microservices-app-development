@@ -18,7 +18,7 @@ app.use(function (req, res, next) {
 });
 
 app.get('/api/message', (req, res) => res.json({
-    message: 'Hello World v2'
+    message: 'Hello World v1'
 }));
 
 app.listen(3001, () => console.log('Listening on port 3001'));

@@ -355,11 +355,11 @@ jaeger-query   LoadBalancer   10.0.0.0   xxx.xxx.xxx.xxx   80:31742/TCP   111s
 Project nameを入力し、Create projectをクリックします。  
 
 ### 3-2. リポジトリの作成
-Reposを開き、リポジトリのURLを取得して項5で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
+Reposを開き、リポジトリのURLを取得して[2](#-2.-アプリケーション開発)で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
 対象はapiとします。  
 また、Kubernetesへデプロイするためのyamlも用意します。  
 api/deployment.yamlという名称でファイルを作り、プッシュします。  
-サンプルのdeployment.yamlの{ACRname}、{old_version}は置き換えてください。
+サンプルのdeployment.yamlの{ACRname}は置き換えてください。
 ```
 cd api
 git init
