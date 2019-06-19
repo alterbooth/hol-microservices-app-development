@@ -338,20 +338,29 @@ Project nameを入力し、Create projectをクリックします。
 
 ### 3-2. リポジトリの作成
 Reposを開き、リポジトリのURLを取得して項5で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
+対象はapiとします。  
 また、Kubernetesへデプロイするためのyamlも用意します。  
-deployment.yamlという名称でファイルを作り、プッシュします。  
+api/deployment.yamlという名称でファイルを作り、プッシュします。  
 サンプルのdeployment.yamlの{ACRname}、{old_version}は置き換えてください。
 ```
+cd api
+git init
 git remote add origin https://xxxxx@dev.azure.com/xxxxx/xxxx/_git/xxxx
-git push -u origin --all
+git add .
+git commit -m "First commit"
+git push origin master
 ```
 
 ### 3-3. ビルドの作成
 Pipelinesを開き、New pipelineをクリックします。  
 Use the classic editorをクリックし、Azure Repos Gitにて先ほどプッシュしたリポジトリが選択されていることを確認し、Continueをクリックします。  
-Docker containerをApplyします。
-Build an imageとPush an imageにて[1-2](#1-2-azure-container-registryacrの構築)で作成したレジストリをそれぞれAzure subscriptionとAzure container Registryで選択します。  
-+をクリックし、Bash Scriptを追加。  
+Docker containerをApplyします。  
+Variablesを開き、Addでdockercontainerを作成し、Valueにはapiと入力します。  
+Triggersを開き、Enable contrinuous integrationへチェックを入れ、TypeにInclude、Branch specificationにmasterを選択します。  
+Tasksを開き、Build an imageとPush an imageにて[1-2](#1-2-azure-container-registryacrの構築)で作成したレジストリをそれぞれAzure subscriptionとAzure container Registryにて選択します。  
+Azure subscriptionを選択した際には右側のAuthorizeボタンをクリックします。  
+また、Image Nameには$(dockercontainer):$(Build.BuildNumber)と入力します。  
++をクリックし、Push an imageの下にBashをAddします。  
 TypeをInlineにしてScriptを以下のようにします。
 ```
 # Write your commands here
@@ -362,10 +371,15 @@ cat $(Build.SourcesDirectory)/deployment.yaml
 
 # Use the environment variables input below to pass secret variables to this script
 ```
-Publish Artifactを追加し、deployment.yamlを選択します。  
-Path to publishでdeployment.yamlを選択、Artifact nameではyamlと入力し、Saveします。  
+Publish Build Artifactを追加し、deployment.yamlを選択します。  
+Path to publishでdeployment.yamlを選択、Artifact nameではyamlと入力し、Save & Queueします。  
 
 ![Azure DevOps Builds](/screenshots/builds_001.png "Azure DevOps Builds")
+
+Buildが実行されますので動作を確認します。  
+
+![Azure DevOps Builds](/screenshots/builds_002.png "Azure DevOps Builds")
+
 
 ### 3-4. リリースの作成
 Releasesを開き、New pipelineをクリックします。  
@@ -374,19 +388,32 @@ Stageは×で閉じ、Add an artifactをクリックし、[3-3](#3-3-ビルド�
 右上の丸雷アイコンをクリックし、Continuous deployment triggerをEnabledにします。  
 Build branch filtersをAddしてBuild branchをmasterにします。  
 Stage 1の下にある「1 job, 1task」をクリックし、kubectlを選択します。  
-Kubernets service connectionは+newをクリックし、Azure Subscriptionから対象のAKSクラスタを選択します。 
+Kubernets service connectionは+Newをクリックし、Azure Subscriptionから対象のAKSクラスタを選択します。 
 Namespaceにはaksappを選択します。  
-画面が戻るのでNamespaceにaksappを入力し、Commandはapplyを選択してUse Configuration filesにチェックを入れてdeployment.yamlを選択する。  
-SaveしてOKする。  
+Connection nameには任意の名称を入力します。  
+画面が戻るのでNamespaceにaksappを入力し、Commandはapplyを選択してUse Configuration filesにチェックを入れてdeployment.yamlを選択します。  
+SaveしてOKします。  
 ![Azure DevOps Releases](/screenshots/releases_001.png "Azure DevOps Releases")  
 ![Azure DevOps Releases](/screenshots/releases_002.png "Azure DevOps Releases")
 
+動作確認の為、Create releaseをクリックします。  
 
 ### 3-5. パイプラインの実行
-Buildを開き、Queueをクリックします。  
-今後のパイプラインの動作はmasterブランチが更新された際に自動実行されます。
-![Azure DevOps Pipelines](/screenshots/pipelines_001.png "Azure DevOps Pipelines")
-
+[3-3](#-3-2.-リポジトリの作成)で作成したReposのmasterを更新することでパイプラインが実行されます。  
+動作するかの確認のため、apiアプリを更新します。  
+index.jsの以下文面を変更します。  
+```
+message: 'Hello World v1'
+```
+変更したらリポジトリへプッシュします。
+```
+git add .
+git commit -m "modified index.js"
+git push origin master
+```
+Azure DevOpsの画面にて動作したかの確認をします。
+![Azure DevOps Builds](/screenshots/builds_003.png "Azure DevOps Builds")
+![Azure DevOps Releases](/screenshots/releases_003.png "Azure DevOps Releases")
 
 ## 4. リソースの削除
 ### 4-1. Kubernetesリソースの削除
