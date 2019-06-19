@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aksapp-api-1-0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aksapp-api
+      version: "v1"
+  template:
+    metadata:
+      labels:
+        app: aksapp-api
+        version: "v1"
+    spec:
+      containers:
+      - name: aksapp-api
+        image: {ACRname}.azurecr.io/api:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aksapp-api
+  labels: 
+    app: aksapp-api
+spec:
+  ports:
+  - port: 3001
+    name: http
+  selector:
+    app: aksapp-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aksapp-web-1-0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aksapp-web
+      version: "v1"
+  template:
+    metadata:
+      labels:
+        app: aksapp-web
+        version: "v1"
+    spec:
+      containers:
+      - name: aksapp-web
+        image: {ACRname}.azurecr.io/web:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: API_ENDPOINT
+          value: "http://aksapp-api.aksapp.svc.cluster.local:3001/api/message"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aksapp-web
+  labels: 
+    app: aksapp-web
+spec:
+  ports:
+  - port: 3000
+    name: http
+  selector:
+    app: aksapp-web
