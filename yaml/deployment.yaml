@@ -1,93 +1,189 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aks-app
+  name: aksapp-api-1-0
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
-      app: aks-app
-      version: latest
+      app: aksapp-api
+      version: "v1"
   template:
     metadata:
       labels:
-        app: aks-app
-        version: latest
+        app: aksapp-api
+        version: "v1"
     spec:
       containers:
-      - name: aks-app
-        image: {ACRname}.azurecr.io/aksapp:latest
+      - name: aksapp-api
+        image: {ACRname}.azurecr.io/api:v1
         imagePullPolicy: Always
         ports:
-        - containerPort: 80
+        - containerPort: 3001
+          name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aksapp-api-2-0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aksapp-api
+      version: "v2"
+  template:
+    metadata:
+      labels:
+        app: aksapp-api
+        version: "v2"
+    spec:
+      containers:
+      - name: aksapp-api
+        image: {ACRname}.azurecr.io/api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
           name: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: aks-app
+  name: aksapp-api
   labels: 
-    app: aks-app
+    app: aksapp-api
 spec:
   ports:
-  - port: 80
+  - port: 3001
     name: http
   selector:
-    app: aks-app
-  type: ClusterIP
+    app: aksapp-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aksapp-web-1-0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aksapp-web
+      version: "v1"
+  template:
+    metadata:
+      labels:
+        app: aksapp-web
+        version: "v1"
+    spec:
+      containers:
+      - name: aksapp-web
+        image: {ACRname}.azurecr.io/web:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: API_ENDPOINT
+          value: "http://aksapp-api.aksapp.svc.cluster.local:3001/api/message"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aksapp-web
+  labels: 
+    app: aksapp-web
+spec:
+  ports:
+  - port: 3000
+    name: http
+  selector:
+    app: aksapp-web
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: aks-app
+  name: aksapp-web
 spec:
   hosts:
   - "*"
   gateways:
-  - aks-app-gateway
+  - aksapp-web-gateway
   http:
   - match:
     - uri:
         prefix: /
     route:
     - destination:
-        host: aks-app.aksapp.svc.cluster.local
-        subset: {old_version}
+        host: aksapp-web.aksapp.svc.cluster.local
+        subset: v1-0
         port:
-          number: 80
-      weight: 80
-    - destination:
-        host: aks-app.aksapp.svc.cluster.local
-        subset: latest
-        port:
-          number: 80
-      weight: 20
+          number: 3000
 ---
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
 metadata:
-  name: aks-app-gateway
+  name: "default"
 spec:
-  selector:
-    istio: ingressgateway
-  servers:
-  - port:
-      number: 80
-      name: http
-      protocol: HTTP
-    hosts:
-    - "*"
+  peers:
+  - mtls: 
+      mode: STRICT
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: aksapp-destination
+  name: aksapp-web
 spec:
-  host: aks-app.aksapp.svc.cluster.local
+  host: aksapp-web.aksapp.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
   subsets:
-  - name: {old_version}
+  - name: v1-0
     labels:
-      version: {old_version}
-  - name: latest
+      app: aksapp-web
+      version: "v1"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: aksapp-api
+spec:
+  host: aksapp-api.aksapp.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1-0
     labels:
-      version: latest
+      app: aksapp-api
+      version: "v1"
+  - name: v2-0
+    labels:
+      app: aksapp-api
+      version: "v2"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: aksapp-api
+spec:
+  hosts:
+  - aksapp-api.aksapp.svc.cluster.local
+  http:
+  - match:
+    - sourceLabels:
+        app: aksapp-web
+        version: "v1"
+    route:
+    - destination:
+        host: aksapp-api.aksapp.svc.cluster.local
+        subset: v1-0
+        port:
+          number: 3001
+      weight: 80
+    - destination:
+        host: aksapp-api.aksapp.svc.cluster.local
+        subset: v2-0
+        port:
+          number: 3001
+      weight: 20

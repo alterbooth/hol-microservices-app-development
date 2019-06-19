@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aksapp-api-2-0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aksapp-api
+      version: "v2"
+  template:
+    metadata:
+      labels:
+        app: aksapp-api
+        version: "v2"
+    spec:
+      containers:
+      - name: aksapp-api
+        image: {ACRname}.azurecr.io/api:v2
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          name: http

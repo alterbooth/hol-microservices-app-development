@@ -1,0 +1,88 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: aksapp-web
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - aksapp-web-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: aksapp-web.aksapp.svc.cluster.local
+        subset: v1-0
+        port:
+          number: 3000
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: 
+      mode: STRICT
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: aksapp-web
+spec:
+  host: aksapp-web.aksapp.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1-0
+    labels:
+      app: aksapp-web
+      version: "v1"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: aksapp-api
+spec:
+  host: aksapp-api.aksapp.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1-0
+    labels:
+      app: aksapp-api
+      version: "v1"
+  - name: v2-0
+    labels:
+      app: aksapp-api
+      version: "v2"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: aksapp-api
+spec:
+  hosts:
+  - aksapp-api.aksapp.svc.cluster.local
+  http:
+  - match:
+    - sourceLabels:
+        app: aksapp-web
+        version: "v1"
+    route:
+    - destination:
+        host: aksapp-api.aksapp.svc.cluster.local
+        subset: v1-0
+        port:
+          number: 3001
+      weight: 80
+    - destination:
+        host: aksapp-api.aksapp.svc.cluster.local
+        subset: v2-0
+        port:
+          number: 3001
+      weight: 20

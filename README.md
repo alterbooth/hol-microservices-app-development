@@ -18,6 +18,10 @@
 ## 文中のyamlについて
 本リポジトリ内のyamlディレクトリに同一ファイル名称で格納していますのでご参照ください。    
 
+## コマンド入力の表記について
+$ と記載しているものはローカルPC環境で、  
+xxxx@Azure:~$ と記載しているものはAzure Cloud Shellで実行します。
+
 ## 1. 環境構築
 ### 1-1. Azure Kubernetes Service(AKS)の構築
 [Azure Portal](https://portal.azure.com/)へログインします。  
@@ -174,20 +178,26 @@ xxxx@Azure:~$ kubectl label namespace aksapp istio-injection=enabled
 ```
 
 Kubernetesで動作させるためにyamlを作成します。  
-Cloud Shellでstep1-create-app.yamlのimage部分を作成したACRへ編集します。
+Cloud Shellでstep-1-create-app.yamlのimage部分を作成したACRへ編集します。
 ```
     spec:
       containers:
-      - name: aks-app-web
+      - name: aksapp-web
         image: {ACRname}.azurecr.io/web:v1
         imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
 ```
 ```
     spec:
       containers:
-      - name: aks-app-api
+      - name: aksapp-api
         image: {ACRname}.azurecr.io/api:v1
         imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          name: http
 ```
 
 作成したstep1-create-app.yamlを使ってKubernetesへコンテナアプリケーションをデプロイします。
@@ -195,35 +205,33 @@ Cloud Shellでstep1-create-app.yamlのimage部分を作成したACRへ編集し�
 xxxx@Azure:~$ kubectl apply -f step1-create-app.yaml -n aksapp
 ```
 
-VirtualServiceとGatewayを作成するため、step1-create-gateway.yamlをデプロイします。
+VirtualServiceとGatewayを作成するため、step-2-create-gateway.yamlを作成してデプロイします。
 ```
-xxxx@Azure:~$ kubectl apply -f step1-create-gateway.yaml -n aksapp
+xxxx@Azure:~$ kubectl apply -f step-2-create-gateway.yaml -n aksapp
 ```
 
 確認するには以下のコマンドを入力します。
 ```
 xxxx@Azure:~$ kubectl get deploy,po,service,gateway,virtualservice -n aksapp
-NAME                                DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-deployment.extensions/aks-app-api   3         3         3            3           6m
-deployment.extensions/aks-app-web   3         3         3            3           6m1s
+NAME                                   DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+deployment.extensions/aksapp-api-1-0   2         2         2            2           117s
+deployment.extensions/aksapp-web-1-0   2         2         2            2           117s
 
-NAME                               READY   STATUS    RESTARTS   AGE
-pod/aks-app-api-664d457bc8-c8r72   2/2     Running   0          6m
-pod/aks-app-api-664d457bc8-thjvr   2/2     Running   0          6m
-pod/aks-app-api-664d457bc8-xtr67   2/2     Running   0          6m
-pod/aks-app-web-6758c49bbf-7k5tl   2/2     Running   0          6m1s
-pod/aks-app-web-6758c49bbf-f2zph   2/2     Running   0          6m1s
-pod/aks-app-web-6758c49bbf-lzzb4   2/2     Running   0          6m1s
+NAME                                  READY   STATUS    RESTARTS   AGE
+pod/aksapp-api-1-0-7b7f478986-nrsnj   2/2     Running   0          30s
+pod/aksapp-api-1-0-7b7f478986-qgcmq   2/2     Running   0          117s
+pod/aksapp-web-1-0-6d664dcd56-7hrxn   2/2     Running   0          117s
+pod/aksapp-web-1-0-6d664dcd56-wr9hz   2/2     Running   0          117s
 
-NAME                  TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE
-service/aks-app-api   ClusterIP   10.0.xx.xx    <none>        3001/TCP   6m
-service/aks-app-web   ClusterIP   10.0.xxx.xx   <none>        80/TCP     6m1s
+NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/aksapp-api   ClusterIP   10.0.xxx.xxx   <none>        3001/TCP   117s
+service/aksapp-web   ClusterIP   10.0.xxx.xxx   <none>        3000/TCP   117s
 
-NAME                                          AGE
-gateway.networking.istio.io/aks-app-gateway   4m
+NAME                                             AGE
+gateway.networking.istio.io/aksapp-web-gateway   1m
 
-NAME                                             GATEWAYS            HOSTS   AGE
-virtualservice.networking.istio.io/aks-app-web   [aks-app-gateway]   [*]     4m
+NAME                                            GATEWAYS               HOSTS   AGE
+virtualservice.networking.istio.io/aksapp-web   [aksapp-web-gateway]   [*]     1m
 ```
 
 アプリケーションへアクセスするためのIPアドレスは以下コマンドで調べられます。
@@ -232,6 +240,7 @@ xxxx@Azure:~$ kubectl get service istio-ingressgateway --namespace istio-system 
 xxx.xxx.xxx.xxx
 ```
 表示されたIPアドレスでアプリケーションが表示されるか確認します。
+![MSA app](/screenshots/app_001.png "MSA app")
 
 ## 2-4. カナリアリリースの実装
 先ほど作ったアプリケーションを変更し、異なるバージョンを作成します。  
@@ -249,40 +258,75 @@ $ docker tag api {ACR Login server}/api:v2
 $ docker push {ACR Login server}/api:v2
 ```
 
-Cloud Shellでstep2-update-app.yamlのimage部分を作成したACRへ編集します。
+Cloud Shellでstep-3-create-api-v2.yamlのimage部分を作成したACRへ編集します。
 ```
     spec:
       containers:
-      - name: aks-app
-        image: {ACRname}.azurecr.io/aksapp:v2
+      - name: aksapp-api
+        image: {ACRname}.azurecr.io/api:v2
         imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          name: http
 ```
 
 新しいバージョンのアプリケーションをデプロイします。
 ```
-xxxx@Azure:~$ kubectl apply -f step2-update-app.yaml -n aksapp
+xxxx@Azure:~$ kubectl apply -f step-3-create-api-v2.yaml -n aksapp
 ```
 
-2つのバージョンを表示させるため、VirtualServiceを変更します。
+動作を確認します。  
+現状ではapi:v1とapi:v2が均等にロードバランスされていることがわかります。
+![MSA app](/screenshots/app_001.png "MSA app")
+![MSA app](/screenshots/app_002.png "MSA app")
+
+
+2つのバージョンの表示割合を変更するため、VirtualServiceを変更します。  
+ここではv1を80%、v2を20%の割合で表示します。
 ```
-xxxx@Azure:~$ kubectl apply -f step2-update-gateway.yaml -n aksapp
+xxxx@Azure:~$ kubectl apply -f step-4-update-api-canary.yaml -n aksapp
 ```
 
-比率を変更する場合はweightの値を変更します。
+比率指定はweightで行います。
 ```
     - destination:
-        host: aks-app.aksapp.svc.cluster.local
-        subset: v1
+        host: aksapp-api.aksapp.svc.cluster.local
+        subset: v1-0
         port:
-          number: 80
+          number: 3001
       weight: 80
     - destination:
-        host: aks-app.aksapp.svc.cluster.local
-        subset: v2
+        host: aksapp-api.aksapp.svc.cluster.local
+        subset: v2-0
         port:
-          number: 80
+          number: 3001
       weight: 20
 ```
+
+次にv2へ完全移行します。  
+weightの値をv1を0、v2を100にします。
+```
+    - destination:
+        host: aksapp-api.aksapp.svc.cluster.local
+        subset: v1-0
+        port:
+          number: 3001
+      weight: 0
+    - destination:
+        host: aksapp-api.aksapp.svc.cluster.local
+        subset: v2-0
+        port:
+          number: 3001
+      weight: 100
+```
+
+変更したらデプロイします。
+```
+xxxx@Azure:~$ kubectl apply -f step-5-update-api-canary-weight.yaml -n aksapp
+```
+
+v2のみ表示されることを確認します。
+![MSA app](/screenshots/app_002.png "MSA app")
 
 
 ## 3. パイプラインの作成
