@@ -200,9 +200,9 @@ Cloud Shellでstep-1-create-app.yamlのimage部分を作成したACRへ編集し
           name: http
 ```
 
-作成したstep1-create-app.yamlを使ってKubernetesへコンテナアプリケーションをデプロイします。
+作成したstep-1-create-app.yamlを使ってKubernetesへコンテナアプリケーションをデプロイします。
 ```
-xxxx@Azure:~$ kubectl apply -f step1-create-app.yaml -n aksapp
+xxxx@Azure:~$ kubectl apply -f step-1-create-app.yaml -n aksapp
 ```
 
 VirtualServiceとGatewayを作成するため、step-2-create-gateway.yamlを作成してデプロイします。
@@ -302,7 +302,8 @@ xxxx@Azure:~$ kubectl apply -f step-4-update-api-canary.yaml -n aksapp
           number: 3001
       weight: 20
 ```
-
+api:v1とapi:v2が8:2の割合で表示されることをブラウザ等で確認します。  
+  
 次にv2へ完全移行します。  
 weightの値をv1を0、v2を100にします。
 ```
@@ -327,6 +328,23 @@ xxxx@Azure:~$ kubectl apply -f step-5-update-api-canary-weight.yaml -n aksapp
 
 v2のみ表示されることを確認します。
 ![MSA app](/screenshots/app_002.png "MSA app")
+
+### 2-5. 分散トレーシングの確認
+これまでのアプリケーションの動作確認でトレースログが取れているので、JaegerのUIより確認します。  
+以下コマンドにてアクセスするIPアドレスを確認します。
+```
+xxxx@Azure:~$ kubectl get service jaeger-query -n istio-system
+NAME           TYPE           CLUSTER-IP    EXTERNAL-IP     PORT(S)        AGE
+jaeger-query   LoadBalancer   10.0.0.0   xxx.xxx.xxx.xxx   80:31742/TCP   111s
+```
+
+取得できたIPアドレスをブラウザで表示します。  
+以下のような画面が出るので、Serviceからaksapp-webを選択してFind Tracesをクリックします。  
+![Jaeger](/screenshots/jaeger_001.png "Jaeger")
+  
+アクセスしたログが表示されるので、その内の一つをクリックすると詳細が表示されます。  
+![Jaeger](/screenshots/jaeger_002.png "Jaeger")
+![Jaeger](/screenshots/jaeger_003.png "Jaeger")
 
 
 ## 3. パイプラインの作成

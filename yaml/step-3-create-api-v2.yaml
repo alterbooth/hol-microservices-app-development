@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: aksapp-api
-        image: {ACRname}.azurecr.io/api:v2
+        image: aksapp.azurecr.io/api:v2
         imagePullPolicy: Always
         ports:
         - containerPort: 3001
