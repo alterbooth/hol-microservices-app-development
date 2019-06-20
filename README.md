@@ -9,7 +9,7 @@
 
 ## 利用するプロダクトのバージョン
 * Kubernetes(AKS) : 1.12.8
-* Istio : 1.1.7
+* Istio : 1.2.0
 * Jeager : 1.8
 
 ## 本ドキュメントの構成
@@ -69,8 +69,8 @@ az role assignment create --assignee $CLIENT_ID --role acrpull --scope $ACR_ID
 Istioをインストールします。
 ```
 xxxx@Azure:~$ az aks get-credentials -g {ResourceGroup} -n {AKSname}
-xxxx@Azure:~$ curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.1.7 sh -
-xxxx@Azure:~$ cd istio-1.1.7
+xxxx@Azure:~$ curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.2.0 sh -
+xxxx@Azure:~$ cd istio-1.2.0
 xxxx@Azure:~$ export PATH=$PWD/bin:$PATH
 xxxx@Azure:~$ for i in install/kubernetes/helm/istio-init/files/crd*yaml; do kubectl apply -f $i; done
 xxxx@Azure:~$ kubectl apply -f install/kubernetes/istio-demo.yaml
@@ -83,14 +83,14 @@ xxxx@Azure:~$ kubectl get po -n istio-system
 NAME                                      READY   STATUS      RESTARTS   AGE
 grafana-77b49c55db-bdbs2                  1/1     Running     0          23m
 istio-citadel-66d49b64fc-9jw2z            1/1     Running     0          23m
-istio-cleanup-secrets-1.1.7-vrtqh         0/1     Completed   0          23m
+istio-cleanup-secrets-1.2.0-vrtqh         0/1     Completed   0          23m
 istio-egressgateway-68d9cfdd4-z7nsv       1/1     Running     0          23m
 istio-galley-676599ffb4-jxprm             1/1     Running     0          23m
-istio-grafana-post-install-1.1.7-jrwjx    0/1     Completed   0          23m
+istio-grafana-post-install-1.2.0-jrwjx    0/1     Completed   0          23m
 istio-ingressgateway-7fbf7bcf45-clwrp     1/1     Running     0          23m
 istio-pilot-56b4dd7bd7-fpdqn              2/2     Running     0          23m
 istio-policy-7bcc6d45df-ssdzv             2/2     Running     2          23m
-istio-security-post-install-1.1.7-sc95j   0/1     Completed   0          23m
+istio-security-post-install-1.2.0-sc95j   0/1     Completed   0          23m
 istio-sidecar-injector-779544894b-8tvj8   1/1     Running     0          23m
 istio-telemetry-d6f5cd5d9-2759p           2/2     Running     3          23m
 istio-tracing-595796cf54-vv2bv            1/1     Running     0          23m
@@ -124,7 +124,7 @@ $ dotnet run
 
 ### 2-2. アプリケーションのコンテナ化
 前項で作成したアプリケーションをコンテナ化します。  
-web,apiそれぞれののソースディレクトリにてDockerfileを作成します。
+web,apiそれぞれののソースディレクトリにてDockerfileを作成します。  
 [web]
 ```
 FROM node:10.16.0-alpine
@@ -144,7 +144,7 @@ EXPOSE 3001
 CMD ["node", "index.js"]
 ```
 
-出来上がったらdocker buildしてみて動作するかを検証します。
+出来上がったらdocker buildしてみて動作するかを検証します。  
 [web]
 ```
 $ cd src/web
