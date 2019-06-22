@@ -112,55 +112,35 @@ jaeger-query   LoadBalancer   10.0.0.0   xxx.xxx.xxx.xxx   80:31742/TCP   111s
 ```
 アプリケーションへの実装は後述します。
 
+### 1-5. 構成ファイルのダウンロード
+Cloud Shellで以下のコマンドを入力し、ハンズオンで使用する構成ファイルをダウンロードします。
+```
+xxxx@Azure:~$ git clone https://github.com/alterbooth/hol-microservices-app-development.git
+```
+
 ## 2. アプリケーション開発
-### 2-1. マイクロサービスなアプリケーションの開発
-【あとで書き換え】  
-以下コマンドにてMVCアプリケーションを作成し、動作確認する。
-```
-$ dotnet new mvc -o aksapp
-$ cd aksapp
-$ dotnet run
-```
+### 2-1. サンプルアプリケーションのダウンロード
+下記URLにアクセスし、サンプルアプリケーションのZipファイルをダウンロードします。  
+https://github.com/alterbooth/hol-microservices-app-development/archive/master.zip
+
+ダウンロードが完了したらZipファイルを展開します。
 
 ### 2-2. アプリケーションのコンテナ化
-前項で作成したアプリケーションをコンテナ化します。  
-web,apiそれぞれののソースディレクトリにてDockerfileを作成します。  
-[web]
-```
-FROM node:10.16.0-alpine
-ADD . /usr/src/web
-WORKDIR /usr/src/web
-RUN npm install
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-[api]
-```
-FROM node:10.16.0-alpine
-ADD . /usr/src/api
-WORKDIR /usr/src/api
-RUN npm install
-EXPOSE 3001
-CMD ["node", "index.js"]
-```
-
-出来上がったらdocker buildしてみて動作するかを検証します。  
+前項でダウンロードしたアプリケーションをコンテナ化します。  
 [web]
 ```
 $ cd src/web
 $ docker build ./ -t web
-$ docker run -it --name web -p 3000:3000 web
 ```
 [api]
 ```
 $ cd src/api
 $ docker build ./ -t api
-$ docker run -it --name api -p 3001:3001 api
 ```
 
-動作確認が完了したらACRへコンテナイメージをプッシュします。  
-まずはAzure PortalでContainer registryAccess keysよりLogin serverとUsername/passwordを確認します。  
-次に、作成したコンテナイメージのタグをACRへプッシュするため変更し、ACRへログインしてプッシュします。
+次にACRへコンテナイメージをプッシュします。  
+Azure PortalでContainer Registry > Access keysよりLogin serverとUsername/passwordを確認します。  
+作成したコンテナイメージのタグをACRへプッシュするため変更し、ACRへログインしてプッシュします。
 ```
 $ docker tag web {ACRname}.azurecr.io/web:v1
 $ docker tag api {ACRname}.azurecr.io/api:v1
@@ -247,7 +227,7 @@ xxx.xxx.xxx.xxx
 src/api/index.jsを編集し、コンテナ化します。
 出来上がったら先ほどと同様にdocker buildしてみて動作するかを検証します。
 ```
-$ cd src/api/index.js
+$ cd src/api/
 $ docker build ./ -t api
 $ docker run -it --name api -p 3001:3001 api
 ```
@@ -339,7 +319,7 @@ jaeger-query   LoadBalancer   10.0.0.0   xxx.xxx.xxx.xxx   80:31742/TCP   111s
 ```
 
 取得できたIPアドレスをブラウザで表示します。  
-以下のような画面が出るので、Serviceからaksapp-webを選択してFind Tracesをクリックします。  
+以下のような画面が出るので、Serviceからaksapp-web.aksappを選択してFind Tracesをクリックします。  
 ![Jaeger](/screenshots/jaeger_001.png "Jaeger")
   
 アクセスしたログが表示されるので、その内の一つをクリックすると詳細が表示されます。  
@@ -363,9 +343,9 @@ api/deployment.yamlという名称でファイルを作り、プッシュしま�
 ```
 cd api
 git init
-git remote add origin https://xxxxx@dev.azure.com/xxxxx/xxxx/_git/xxxx
 git add .
 git commit -m "First commit"
+git remote add origin https://xxxxx@dev.azure.com/xxxxx/xxxx/_git/xxxx
 git push origin master
 ```
 
@@ -441,11 +421,11 @@ xxxx@Azure:~$ kubectl delete namespace aksapp
 ```
 
 ### 4-2. Azure リソースの削除
-[Azure Portal](https://portal.azure.com/)より1-1で作成したリソースグループを削除する。  
+[Azure Portal](https://portal.azure.com/)より1-1で作成したリソースグループを削除します。  
 ```
 xxxx@Azure:~$ az group delete --name {ResourceGroup}
 ```
 
 ### 4-3. Azure DevOpsリソースの削除
-[Azure DevOps](https://dev.azure.com/)より3-2で作成したプロジェクトを削除する。
+[Azure DevOps](https://dev.azure.com/)より3-2で作成したプロジェクトを削除します。
 
