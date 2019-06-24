@@ -412,9 +412,9 @@ message: 'Hello World v1'
 ```
 変更したらリポジトリへプッシュします。
 ```
-git add .
-git commit -m "modified index.js"
-git push origin master
+xxxx@Azure:~$ git add .
+xxxx@Azure:~$ git commit -m "modified index.js"
+xxxx@Azure:~$ git push origin master
 ```
 Azure DevOpsの画面にて動作したかの確認をします。
 ![Azure DevOps Builds](/screenshots/builds_003.png "Azure DevOps Builds")
