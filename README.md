@@ -6,11 +6,14 @@
 * Microsoft Azureサブスクリプションの取得
 * Visual Studio Codeインストール
 * Dockerインストール
+* Gitインストール
+* Node.jsインストール
 
 ## 利用するプロダクトのバージョン
 * Kubernetes(AKS) : 1.12.8
 * Istio : 1.2.0
 * Jeager : 1.8
+* Node.js : 10.16.0 LTS
 
 ## 本ドキュメントの構成
 ![Architecture](/screenshots/architecture.png "Architecture")
