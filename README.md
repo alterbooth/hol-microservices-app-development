@@ -341,15 +341,19 @@ Project nameを入力し、Create projectをクリックします。
 Reposを開き、リポジトリのURLを取得して[2](#-2.-アプリケーション開発)で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
 対象はapiとします。  
 また、Kubernetesへデプロイするためのyamlも用意します。  
+sshでコードをプッシュするため、SSH public keyを登録します。  
+AKS作成時に生成されたキーがあるのでCloud Shellで~/.ssh/id_rsa.pubを参照し、Azure DevOpsのユーザーのSecurity→SSH public keysへ登録します。  
 api/deployment.yamlという名称でファイルを作り、プッシュします。  
 サンプルのdeployment.yamlの{ACRname}は置き換えてください。
 ```
-cd api
-git init
-git add .
-git commit -m "First commit"
-git remote add origin https://xxxxx@dev.azure.com/xxxxx/xxxx/_git/xxxx
-git push origin master
+xxxx@Azure:~$ cd api
+xxxx@Azure:~$ git init
+xxxx@Azure:~$ git config --global user.name "User Name"
+xxxx@Azure:~$ git config --global user.email {e-mail}
+xxxx@Azure:~$ git add .
+xxxx@Azure:~$ git commit -m "First commit"
+xxxx@Azure:~$ git remote add origin git@ssh.dev.azure.com:v3/xxxxx/xxxxx/xxxxx
+xxxx@Azure:~$ git push origin master
 ```
 
 ### 3-3. ビルドの作成
