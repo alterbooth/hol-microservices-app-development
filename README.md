@@ -227,15 +227,7 @@ xxx.xxx.xxx.xxx
 
 ## 2-4. カナリアリリースの実装
 先ほど作ったアプリケーションを変更し、異なるバージョンを作成します。  
-src/api/index.jsを編集し、コンテナ化します。
-出来上がったら先ほどと同様にdocker buildしてみて動作するかを検証します。
-```
-$ cd src/api/
-$ docker build ./ -t api
-$ docker run -it --name api -p 3001:3001 api
-```
-
-動作に問題なければACRへバージョンタグを変更してプッシュします。
+src/api/index.jsを編集し、ACRへバージョンタグをv2としてプッシュします。
 ```
 $ docker tag api {ACR Login server}/api:v2
 $ docker push {ACR Login server}/api:v2
