@@ -168,7 +168,10 @@ xxxx@Azure:~$ kubectl label namespace aksapp istio-injection=enabled
 ```
 
 Kubernetesで動作させるためにyamlを作成します。  
-Cloud Shellでstep-1-create-app.yamlのimage部分を作成したACRへ編集します。
+Cloud Shellでエディタを起動します。  
+![Open editor](screenshots/yaml_001.png)
+
+step-1-create-app.yamlのimage部分を作成したACRへ編集します。
 ```
     spec:
       containers:
