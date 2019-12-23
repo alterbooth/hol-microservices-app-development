@@ -236,6 +236,7 @@ xxx.xxx.xxx.xxx
 先ほど作ったアプリケーションを変更し、異なるバージョンを作成します。  
 src/api/index.jsを編集し、ACRへバージョンタグをv2としてプッシュします。
 ```
+$ docker build ./ -t api
 $ docker tag api {ACR Login server}/api:v2
 $ docker push {ACR Login server}/api:v2
 ```
