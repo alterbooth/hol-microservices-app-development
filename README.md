@@ -349,7 +349,10 @@ AKS作成時に生成されたキーがあるのでCloud Shellで`~/.ssh/id_rsa.
 ![Add ssh key 2](screenshots/repos_002.png)  
 ![Add ssh key 3](screenshots/repos_003.png)  
 
-Reposを開き、リポジトリのURLを取得して[2](#-2.-アプリケーション開発)で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
+Reposを開き、リポジトリのURLをコピーします。  
+![Copy git url](screenshots/repos_004.png)  
+
+取得して[2](#-2.-アプリケーション開発)で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
 対象はapiとします。  
 また、Kubernetesへデプロイするためのyamlも用意します。  
 api/deployment.yamlという名称でファイルを作り、プッシュします。  
