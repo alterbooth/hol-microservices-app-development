@@ -352,7 +352,7 @@ AKS作成時に生成されたキーがあるのでCloud Shellで`~/.ssh/id_rsa.
 Reposを開き、リポジトリのURLをコピーします。  
 ![Copy git url](screenshots/repos_004.png)  
 
-取得して[2](#-2.-アプリケーション開発)で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
+[2](#-2.-アプリケーション開発)で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
 対象はapiとします。  
 また、Kubernetesへデプロイするためのyamlも用意します。  
 api/deployment.yamlという名称でファイルを作り、プッシュします。  
@@ -364,7 +364,7 @@ xxxx@Azure:~$ git config --global user.name "User Name"
 xxxx@Azure:~$ git config --global user.email {e-mail}
 xxxx@Azure:~$ git add .
 xxxx@Azure:~$ git commit -m "First commit"
-xxxx@Azure:~$ git remote add origin git@ssh.dev.azure.com:v3/xxxxx/xxxxx/xxxxx
+xxxx@Azure:~$ git remote add origin {コピーしたリポジトリのURL}
 xxxx@Azure:~$ git push origin master
 ```
 
