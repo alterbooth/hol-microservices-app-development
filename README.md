@@ -341,11 +341,17 @@ jaeger-query   LoadBalancer   10.0.0.0   xxx.xxx.xxx.xxx   80:31742/TCP   111s
 Project nameを入力し、Create projectをクリックします。  
 
 ### 3-2. リポジトリの作成
+Reposに対してsshでコードをプッシュするため、SSH public keyを登録します。  
+AKS作成時に生成されたキーがあるのでCloud Shellで`~/.ssh/id_rsa.pub`の内容をコピーしておきます。  
+下記のようにAzure DevOpsのユーザーのSecurity→SSH public keysへ登録します。
+
+![Add ssh key 1](screenshots/repos_001.png)  
+![Add ssh key 2](screenshots/repos_002.png)  
+![Add ssh key 3](screenshots/repos_003.png)  
+
 Reposを開き、リポジトリのURLを取得して[2](#-2.-アプリケーション開発)で作成したアプリケーションのディレクトリにて以下コマンドを入力してリモートリポジトリを登録します。  
 対象はapiとします。  
 また、Kubernetesへデプロイするためのyamlも用意します。  
-sshでコードをプッシュするため、SSH public keyを登録します。  
-AKS作成時に生成されたキーがあるのでCloud Shellで~/.ssh/id_rsa.pubを参照し、Azure DevOpsのユーザーのSecurity→SSH public keysへ登録します。  
 api/deployment.yamlという名称でファイルを作り、プッシュします。  
 サンプルのdeployment.yamlの{ACRname}は置き換えてください。
 ```
@@ -365,7 +371,7 @@ Use the classic editorをクリックし、Azure Repos Gitにて先ほどプッ�
 Docker containerをApplyします。  
 Variablesを開き、Addでdockercontainerを作成し、Valueにはapiと入力します。  
 Triggersを開き、Enable contrinuous integrationへチェックを入れ、TypeにInclude、Branch specificationにmasterを選択します。  
-Tasksを開き、Build an imageとPush an imageにて[1-2](#1-2-azure-container-registryacrの構築)で作成したレジストリをそれぞれAzure subscriptionとAzure container Registryにて選択します。  
+Tasksを開き、Build an imageとPush an imageにて[3-2](#1-2-azure-container-registryacrの構築)で作成したレジストリをそれぞれAzure subscriptionとAzure container Registryにて選択します。  
 Azure subscriptionを選択した際には右側のAuthorizeボタンをクリックします。  
 また、Image Nameには$(dockercontainer):$(Build.BuildNumber)と入力します。  
 +をクリックし、Push an imageの下にBashをAddします。  
