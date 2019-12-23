@@ -142,8 +142,15 @@ $ docker build ./ -t api
 ```
 
 次にACRへコンテナイメージをプッシュします。  
-Azure PortalでContainer Registry > Access keysよりLogin serverとUsername/passwordを確認します。  
-作成したコンテナイメージのタグをACRへプッシュするため変更し、ACRへログインしてプッシュします。
+以下を参考にAzure PortalでContainer Registry > Access keysよりLogin serverとUsername/passwordを確認します。
+
+![Find Container Registry 1](screenshots/acr_001.png)  
+![Find Container Registry 2](screenshots/acr_002.png)  
+![Find Container Registry 3](screenshots/acr_003.png)  
+
+作成したコンテナイメージのタグをACRへプッシュするため変更し、ACRへログインしてプッシュします。  
+`docker login`のコマンドを実行した際に、コンテナレジストリのUsername/passwordの入力を求められます。
+
 ```
 $ docker tag web {ACRname}.azurecr.io/web:v1
 $ docker tag api {ACRname}.azurecr.io/api:v1
